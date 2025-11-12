@@ -5,8 +5,6 @@ def make_menu(path):
     menu_items = []
     for name in os.listdir(path):
         full = os.path.join(path, name)
-        if os.path.isdir(full):
-            menu_items.append(f"1{name}\t{name}\tlocalhost\t70") # '1' indicates a directory or submenu
 
         mime_type, _ = mimetypes.guess_type(full) # Guess MIME type based on file extension
         if not mime_type:
@@ -14,7 +12,7 @@ def make_menu(path):
 
         file_extension = os.path.splitext(name)[1].lower() # Get file extension (for special cases)
 
-        if file_extension == '.gopher':
+        if os.path.isdir(full) or file_extension == '.gopher':
             item_type = '1'  # '1' indicates a Gopher menu file (server feature)
         elif mime_type.startswith('text/'):
             item_type = '0'  # '0' indicates a text file
