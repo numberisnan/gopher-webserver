@@ -1,0 +1,1 @@
+- Address when a selector is accessed as a directory, just list all possible selectors in a menu with links to corrosponding root blocks
