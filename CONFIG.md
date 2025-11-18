@@ -79,7 +79,7 @@ Possible arguments for "root" type the following:
 
 Adds an additional menu option at the top with as a /search submenu that allows filename-searching of contents in that menu. Default is false.
 
-### "search_recurse"
+### "search_recursive"
 
 Only active if search is true. Whether fulltext searching should be recursive. Default is false.
 
