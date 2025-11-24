@@ -1,5 +1,6 @@
 import socket
 import os
+import threading
 
 from menu import make_menu, determine_item_type
 from config import get_default_root_object
@@ -153,7 +154,7 @@ def recv_selector(conn, max_bytes=4096):
     line = data.decode('utf-8', errors='ignore')
     return line.replace('\r', '').split('\n', 1)[0].strip() or '/'
 
-def start_gopher_server(config):    
+def start_gopher_server(config, stop_event=None):    
     HOST = config.get('host')
     PORT = config.get('port')
 
@@ -162,10 +163,13 @@ def start_gopher_server(config):
             s.bind((HOST, PORT))
             s.listen(5)
             print(f"Gopher server running on port {PORT}...")
-            while True:
-                conn, addr = s.accept()
+            while stop_event is None or not stop_event.is_set():
+                try:
+                    conn, addr = s.accept()
+                except socket.timeout:
+                    continue
                 with conn:
-                    # Read exactly one selector line from the client (CRLF-terminated).
+                    # Read exactly one selector line from the client
                     # Decoding ignores Telnet control bytes so it won’t crash
                     selector = recv_selector(conn)
 
