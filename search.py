@@ -13,29 +13,16 @@ from menu import determine_item_type
 
 def parse_search_selector(selector):
     """
-    Extract the search query from a selector starting with '/search'.
-    Accepted forms:
-      /search<TAB>term
-      /search term
-      /search/term
-    Returns:
-      str: query string if present
-      None: if selector is not a search or has no query
+    Extract the search query only from '/search<TAB>term'.
+    Any other form is considered invalid (returns None).
     """
     if not selector.startswith('/search'):
         return None
     remainder = selector[len('/search'):]
-    if not remainder:
+    if not remainder or not remainder.startswith('\t'):
         return None
-    if remainder.startswith('\t'):
-        q = remainder[1:].strip(); return q or None
-    if '\t' in remainder:
-        q = remainder.split('\t', 1)[1].strip(); return q or None
-    if remainder.startswith(' '):
-        q = remainder.strip(); return q or None
-    if remainder.startswith('/'):
-        q = remainder[1:].strip(); return q or None
-    return None
+    q = remainder[1:].strip()
+    return q or None
 
 def search_files(base_dir, query, recursive):
     """
