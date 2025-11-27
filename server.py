@@ -60,3 +60,5 @@ def start_gopher_server(config):
             print(f"Shutting down Gopher server on port {PORT}...")
         except Exception as e:
             print(f"Error on Gopher server on port {PORT}: {e}")
+        finally:
+            s.close()
