@@ -148,8 +148,8 @@ class TestGopherServer(unittest.TestCase):
         self.assertIn('hello.txt', text)          # filename match in root
         self.assertNotIn('sub/info.txt', text)    # subdir match should be excluded
 
-        # Verifies search result menus end with the \r\n.\r\n gopher terminator
-        def test_search_results_terminate_with_period(self):
+    # Verifies search result menus end with the \r\n.\r\n gopher terminator
+    def test_search_results_terminate_with_period(self):
             text = gopher_request(self.host, self.port, '/search\thello').decode('utf-8', errors='ignore')
             self.assertTrue(text.endswith('\r\n.\r\n'))
         
