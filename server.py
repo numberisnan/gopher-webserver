@@ -1,80 +1,9 @@
 import socket
 import os
-import threading
 
-from menu import make_menu, determine_item_type
+from menu import make_menu
 from config import get_default_root_object
-
-def parse_search_selector(selector):
-    """
-    Accept formats:
-    /search
-    /search<TAB>term
-    /search term
-    /search/term
-    Returns query string or None if missing.
-    """
-    if not selector.startswith('/search'):
-        return None
-    remainder = selector[len('/search'):]  # after '/search'
-    if not remainder:
-        return None
-    if remainder.startswith('\t'):
-        q = remainder[1:].strip()
-        return q or None
-    if '\t' in remainder:
-        parts = remainder.split('\t', 1)
-        q = parts[1].strip()
-        return q or None
-    if remainder.startswith(' '):
-        q = remainder.strip()
-        return q or None
-    if remainder.startswith('/'):
-        q = remainder[1:].strip()
-        return q or None
-    return None
-
-def search_files(base_dir, query, recursive):
-    """
-    Return relative paths whose filename OR text content contains query (case-insensitive).
-    """
-    matches = []
-    query_lower = query.lower()
-    for root, dirs, files in os.walk(base_dir):
-        for fname in files:
-            rel = os.path.relpath(os.path.join(root, fname), base_dir)
-            full = os.path.join(root, fname)
-
-            # Filename match
-            if query_lower in fname.lower():
-                matches.append(rel)
-                continue
-
-            # Content match
-            try:
-                with open(full, 'r', encoding='utf-8', errors='ignore') as f:
-                    if query_lower in f.read().lower():
-                        matches.append(rel)
-            except Exception:
-                pass  # Skip unreadable/binary
-        if not recursive:
-            break
-    return matches
-
-def make_search_results(base_dir, host, port, query, recursive):
-    lines = []
-    lines.append(f"iSearch results for: {query}\tfake\t{host}\t{port}")
-    results = search_files(base_dir, query, recursive)
-    if not results:
-        lines.append(f"iNo matches found.\tfake\t{host}\t{port}")
-    else:
-        for rel in results:
-            full = os.path.join(base_dir, rel)
-            item_type = determine_item_type(full)
-            selector = rel.replace('\\', '/')
-            lines.append(f"{item_type}{selector}\t{selector}\t{host}\t{port}")
-    lines.append(".")
-    return "\r\n".join(lines)
+from search import parse_search_selector, make_search_results
 
 def make_response(selector, conn, config):
     """
@@ -145,6 +74,12 @@ def make_response(selector, conn, config):
     conn.sendall(b"3Error: Not found\r\n.\r\n")
 
 def recv_selector(conn, max_bytes=4096):
+    """
+    Read a single Gopher selector line from the socket.
+    - Accumulates bytes until newline or max_bytes.
+    - Decodes ignoring control/negotiation bytes (Telnet safe).
+    - Normalizes CRLF and returns '/' if empty.
+    """
     data = b''
     while b'\n' not in data and len(data) < max_bytes:
         chunk = conn.recv(1024)
