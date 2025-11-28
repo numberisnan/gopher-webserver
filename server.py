@@ -48,17 +48,20 @@ def make_response(selector, conn, config):
         return
 
     if config.get("selectors", False):
-        for sel in list(config["selectors"].keys()):
-            if selector.startswith(sel):
-                new_selector = selector[len(sel):] or '/'
-                new_config = config["selectors"][sel]
-                # Propagate host/port into nested config if absent
-                if "host" not in new_config:
-                    new_config["host"] = config.get("host", "localhost")
-                if "port" not in new_config:
-                    new_config["port"] = config.get("port", 70)
+        keys = list(config["selectors"].keys())
+        # Collect all prefix matches
+        matches = [k for k in keys if selector.startswith(k)]
+        if matches:
+            best = max(matches, key=len)  # longest prefix
+            new_selector = selector[len(best):] or '/'
+            new_config = config["selectors"][best]
+            if "host" not in new_config:
+                new_config["host"] = config.get("host", "localhost")
+            if "port" not in new_config:
+                new_config["port"] = config.get("port", 70)
                 make_response(new_selector, conn, new_config)
-                return
+            return
+        
         # Fallback
         if "default" in config["selectors"]:
             new_config = config["selectors"]["default"]

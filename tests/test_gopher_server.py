@@ -152,4 +152,37 @@ class TestGopherServer(unittest.TestCase):
     def test_search_results_terminate_with_period(self):
             text = gopher_request(self.host, self.port, '/search\thello').decode('utf-8', errors='ignore')
             self.assertTrue(text.endswith('\r\n.\r\n'))
-        
+    
+    def test_longest_prefix_routing(self):
+        # Reconfigure server with overlapping selectors
+        self.stop.set()
+        try:
+            with socket.create_connection((self.host, self.port), timeout=0.2):
+                pass
+        except Exception:
+            pass
+        self.thread.join(timeout=2)
+
+        # Build nested selector tree
+        base = self.tmpdir.name
+        extra_dir = os.path.join(base, 'extra')
+        os.makedirs(extra_dir, exist_ok=True)
+        with open(os.path.join(extra_dir, 'x.txt'), 'w') as f:
+            f.write('x')
+
+        self.config['serve'] = {
+            'selectors': {
+                '/doc': {'root': {'directory': base}},
+                '/docs': {'root': {'directory': extra_dir}}
+            },
+            'host': self.host,
+            'port': self.port
+        }
+
+        self.stop = threading.Event()
+        self.thread = threading.Thread(target=start_gopher_server, args=(self.config, self.stop), daemon=True)
+        self.thread.start()
+        self.assertTrue(wait_for_port(self.host, self.port), 'server did not restart')
+
+        text = gopher_request(self.host, self.port, '/docs').decode('utf-8', errors='ignore')
+        self.assertIn('x.txt', text)          # Should route to /docs (longer) not /doc
