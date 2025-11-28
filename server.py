@@ -5,7 +5,7 @@ from menu import make_menu
 from config import get_default_root_object
 from search import parse_search_selector, make_search_results
 
-def make_response(selector, conn, config):
+def make_response(selector, conn, config, context):
     """
     Respond based on config (root or selectors). Selector always starts with '/' externally.
     """
@@ -38,7 +38,7 @@ def make_response(selector, conn, config):
         # Normal directory or file serving
         path = os.path.join(base_dir, selector.lstrip('/'))
         if os.path.isdir(path):
-            response = make_menu(path, host=host, port=port, root_config=directory_config)
+            response = make_menu(path, host=host, port=port, root_config=directory_config, context=context)
             conn.sendall(response.encode('utf-8') + b"\r\n")
         elif os.path.isfile(path):
             with open(path, 'rb') as f:
@@ -51,13 +51,14 @@ def make_response(selector, conn, config):
         for sel in list(config["selectors"].keys()):
             if selector.startswith(sel):
                 new_selector = selector[len(sel):] or '/'
+                new_context = context + selector[:len(sel)]
                 new_config = config["selectors"][sel]
                 # Propagate host/port into nested config if absent
                 if "host" not in new_config:
                     new_config["host"] = config.get("host", "localhost")
                 if "port" not in new_config:
                     new_config["port"] = config.get("port", 70)
-                make_response(new_selector, conn, new_config)
+                make_response(new_selector, conn, new_config, new_context)
                 return
         # Fallback
         if "default" in config["selectors"]:
@@ -66,7 +67,7 @@ def make_response(selector, conn, config):
                 new_config["host"] = config.get("host", "localhost")
             if "port" not in new_config:
                 new_config["port"] = config.get("port", 70)
-            make_response(selector, conn, new_config)
+            make_response(selector, conn, new_config, context)
         else:
             conn.sendall(b"3Error: Bad config (no default selector)\r\n.\r\n")
         return
@@ -115,7 +116,9 @@ def start_gopher_server(config, stop_event=None):
                     if "port" not in serve_cfg:
                         serve_cfg["port"] = PORT
 
-                    make_response(selector, conn, serve_cfg)
+                    print(f"Received request for selector '{selector}' from {addr}")
+
+                    make_response(selector, conn, serve_cfg, '')
                     
         except KeyboardInterrupt:
             print(f"Shutting down Gopher server on port {PORT}...")
