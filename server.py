@@ -1,5 +1,6 @@
 import socket
 import os
+import ssl
 
 from menu import make_menu
 from config import get_default_root_object
@@ -96,6 +97,16 @@ def start_gopher_server(config, stop_event=None):
     HOST = config.get('host')
     PORT = config.get('port')
 
+    # TLS config
+    use_tls = bool(config.get('tls', False))
+    tls_certfile = config.get('tls_certfile')
+    tls_keyfile = config.get('tls_keyfile')
+
+    context = None
+    if use_tls:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+        context.load_cert_chain(certfile=tls_certfile, keyfile=tls_keyfile)
+
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         try:
             s.bind((HOST, PORT))
@@ -104,6 +115,11 @@ def start_gopher_server(config, stop_event=None):
             while stop_event is None or not stop_event.is_set():
                 try:
                     conn, addr = s.accept()
+
+                    # wrap connection in TLS if enabled
+                    if use_tls:
+                        conn = context.wrap_socket(conn, server_side=True)
+
                 except socket.timeout:
                     continue
                 with conn:
