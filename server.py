@@ -60,7 +60,7 @@ def make_response(selector, conn, config):
                 new_config["host"] = config.get("host", "localhost")
             if "port" not in new_config:
                 new_config["port"] = config.get("port", 70)
-                make_response(new_selector, conn, new_config)
+            make_response(new_selector, conn, new_config)
             return
         
         # Fallback
