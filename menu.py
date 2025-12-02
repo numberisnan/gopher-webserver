@@ -24,7 +24,7 @@ def determine_item_type(full_path):
         return '<'          # Audio (Gopher+)
     return '9'              # Binary / unknown
 
-def make_menu(path, host='localhost', port=70, root_config=None):
+def make_menu(path, host, port, root_config, context):
     """
     Build a Gopher menu for a directory.
 
@@ -35,7 +35,7 @@ def make_menu(path, host='localhost', port=70, root_config=None):
     menu_items = []
 
     if root_config and root_config.get("search"):
-        menu_items.append(f"7Search\t/search\t{host}\t{port}")
+        menu_items.append(f"7Search\t{context}/search\t{host}\t{port}")
 
     override_type = None
     if root_config:
