@@ -1,3 +1,6 @@
+import mimetypes
+import os
+
 def determine_item_type(full_path):
     mime_type, _ = mimetypes.guess_type(full_path)
     if not mime_type:

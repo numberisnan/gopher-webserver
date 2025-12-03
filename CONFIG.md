@@ -109,3 +109,36 @@ Location of binary.
 
 Do not create dummy menu items per line. Use when CGI returns Gopher output.
 
+### Root Block Type: "reverse_proxy"
+
+Reverse proxy's a connection to another gopher server.
+
+#### REQUIRED: "host"
+
+Host for the reverse proxy
+
+#### "selector"
+
+A hardcoded selector. If not provided the selector proceeding the part of the URI that navigates you to this root block will be used. Thus for a config like
+
+```json
+{
+    "serve": {
+        "selectors": {
+            "/rp": {
+               "reverse_proxy": {
+                    "host": "a.com"
+                } 
+            },
+            "default": {}
+        }
+        
+    }
+}
+```
+
+Then the request to "gopher://localhost/1/rp/a.txt" will return the results of "gopher://a.com/1/a.txt"
+
+#### "port"
+
+Port number of reverse proxy

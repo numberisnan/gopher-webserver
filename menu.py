@@ -1,4 +1,3 @@
-import mimetypes
 import os
 
 from util import determine_item_type

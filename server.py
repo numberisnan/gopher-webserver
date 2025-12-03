@@ -115,6 +115,25 @@ def make_response(selector, conn, config, context):
             conn.sendall(error_msg.encode('utf-8'))
         return
 
+    if config.get("reverse_proxy", False):
+        proxy_config = config["reverse_proxy"]
+        target_host = proxy_config.get("host")
+        target_port = proxy_config.get("port", 70)
+        try:
+            with socket.create_connection((target_host, target_port), timeout=10) as proxy_sock:
+                # Send selector to target server
+                proxy_sock.sendall((selector + "\r\n").encode('utf-8'))
+                # Relay response back to client
+                while True:
+                    data = proxy_sock.recv(4096)
+                    if not data:
+                        break
+                    conn.sendall(data)
+        except Exception as e:
+            error_msg = f"3Error: Reverse proxy failed: {e}\r\n.\r\n"
+            conn.sendall(error_msg.encode('utf-8'))
+        return
+
     conn.sendall(b"3Error: Not found\r\n.\r\n")
 
 def recv_selector(conn, max_bytes=4096):
