@@ -1,10 +1,12 @@
 import socket
 import os
 import ssl
+import shutil
 
 from menu import make_menu
 from config import get_default_root_object
 from search import parse_search_selector, make_search_results
+from util import process_gopher_output
 
 def make_response(selector, conn, config, context):
     """
@@ -86,6 +88,33 @@ def make_response(selector, conn, config, context):
             conn.sendall(b"3Error: Bad config (no default selector)\r\n.\r\n")
         return
 
+    if config.get("cgi", False):
+        cgi_config = config["cgi"]
+        bin_path = cgi_config.get("bin")
+        raw_output = cgi_config.get("raw_output", False)
+        # Check binary exists and is executable, in PATH or absolute
+        if not bin_path or ((not os.path.isfile(bin_path) or not os.access(bin_path, os.X_OK)) and shutil.which(bin_path) is None):
+            conn.sendall(b"3Error: CGI binary not found or not executable\r\n.\r\n")
+            return
+        # Execute CGI binary with selector as argument
+        import subprocess
+        try:
+            result = subprocess.run([bin_path], input=selector, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                if raw_output:
+                    conn.sendall(result.stdout.encode('utf-8') + b"\r\n")
+                else:
+                    # Process output for Gopher format
+                    gopher_output = process_gopher_output(result.stdout)
+                    conn.sendall(gopher_output.encode('utf-8') + b"\r\n")
+            else:
+                error_msg = f"3Error: CGI execution failed with code {result.returncode}\r\n.\r\n"
+                conn.sendall(error_msg.encode('utf-8'))
+        except Exception as e:
+            error_msg = f"3Error: CGI execution exception: {e}\r\n.\r\n"
+            conn.sendall(error_msg.encode('utf-8'))
+        return
+
     conn.sendall(b"3Error: Not found\r\n.\r\n")
 
 def recv_selector(conn, max_bytes=4096):
@@ -93,7 +122,6 @@ def recv_selector(conn, max_bytes=4096):
     Read a single Gopher selector line from the socket.
     - Accumulates bytes until newline or max_bytes.
     - Decodes ignoring control/negotiation bytes (Telnet safe).
-    - Normalizes CRLF and returns '/' if empty.
     """
     data = b''
     while b'\n' not in data and len(data) < max_bytes:

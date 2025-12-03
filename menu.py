@@ -1,28 +1,7 @@
 import mimetypes
 import os
 
-def determine_item_type(full_path):
-    mime_type, _ = mimetypes.guess_type(full_path)
-    if not mime_type:
-        mime_type = ''
-    file_extension = os.path.splitext(full_path)[1].lower()
-
-    if os.path.isdir(full_path) or file_extension == '.gopher':
-        return '1'  # Directory / menu
-    if mime_type.startswith('text/'):
-        return '0'  # Text file
-    if mime_type.startswith('image/'):
-        if mime_type == 'image/gif':
-            return 'g'      # GIF
-        elif mime_type == 'image/bitmap':
-            return ':'      # BMP (Gopher+)
-        else:
-            return 'I'      # Generic image
-    if mime_type.startswith('video/'):
-        return ';'          # Video (Gopher+)
-    if mime_type.startswith('audio/'):
-        return '<'          # Audio (Gopher+)
-    return '9'              # Binary / unknown
+from util import determine_item_type
 
 def make_menu(path, host, port, root_config, context):
     """
