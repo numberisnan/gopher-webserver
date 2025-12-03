@@ -8,11 +8,21 @@ from search import parse_search_selector, make_search_results
 
 def make_response(selector, conn, config, context):
     """
-    Respond based on config (root or selectors). Selector always starts with '/' externally.
+    Respond based on config (root or selectors). Selector always starts with '/' externally
+
+    Arguments:
+    - selector: str, the Gopher selector requested by the client
+    - conn: socket object, the client connection to send data to
+    - config: dict, the configuration for this level of response
+    - context: str, the current selector context for nested selectors
+    
+    Note that context concatinated with selector gives the full selector path
     """
+    print(f"Handling selector '{selector}' and context: '{context}' with config: {config}")
     if config.get("root", False):
         # Expand root string to full config if needed
         directory_config = get_default_root_object(config["root"]) if isinstance(config["root"], str) else config["root"]
+        
         base_dir = directory_config.get("directory")
         host = config.get("host", "localhost")
         port = config.get("port", 70)
