@@ -31,17 +31,25 @@ def run():
 
     # Change this
     PROJECT_DIR = '/mnt/c/Users/nadav/gopher-webserver'
+    CONF_A = f'{PROJECT_DIR}/config_a.json'
+    CONF_B = f'{PROJECT_DIR}/config_b.json'
+    
+    info('*** Starting Gopher server on h1 with config_a.json\n')
+    h1.cmd(f'cd {PROJECT_DIR} && cp {CONF_A} config.json && python3 main.py >h1.log 2>&1 &')
 
-    info('*** Starting Gopher server on h1\n')
-    h1.cmd(f'cd {PROJECT_DIR} && python3 main.py >server.log 2>&1 &')
+    info('*** Starting Gopher server on h2 with config_b.json\n')
+    h2.cmd(f'cd {PROJECT_DIR} && cp {CONF_B} config.json && python3 main.py >h2.log 2>&1 &')
 
-    info('*** Give the server a moment to start\n')
+    info('*** Give the servers a moment to start\n')
     h1.cmd('sleep 1')
+    h2.cmd('sleep 1')
 
     info('\n*** Network is ready.\n')
-    info('*** From the Mininet CLI, run:\n')
-    info('    h2 openssl s_client -connect 10.0.0.1:7070 -crlf\n')
-    info('    (then type / and press Enter to get the Gopher menu)\n\n')
+    info('*** From the Mininet CLI, try:\n')
+    info('    h1 tail -n +1 h1.log\n')
+    info('    h2 tail -n +1 h2.log\n')
+    info('    h2 openssl s_client -connect 10.0.0.1:<port-from-config-a> -crlf\n')
+    info('    h1 openssl s_client -connect 10.0.0.2:<port-from-config-b> -crlf\n\n')
 
     CLI(net)
 
